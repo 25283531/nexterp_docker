@@ -1,13 +1,13 @@
 FROM ubuntu:22.04
 LABEL author=lvxj11
 
-# 设定参数
-ENV MARIADB_ROOT_PASSWORD=Pass1234
-ENV ADMIN_PASSWORD=admin
+# 设定非敏感参数
 ENV SITE_NAME=site1.local
-ENV SITE_DB_PASSWORD=Pass1234
 ENV PRODUCTION_MODE=yes
 ENV ALT_APT_SOURCES=no
+
+# 注意：敏感参数(MARIADB_ROOT_PASSWORD、ADMIN_PASSWORD、SITE_DB_PASSWORD)请在运行时通过-e参数传入
+# 例如：docker run -e MARIADB_ROOT_PASSWORD=yourpassword -e ADMIN_PASSWORD=youradminpass -e SITE_DB_PASSWORD=yoursitepass ...
 
 ARG DEBIAN_FRONTEND=noninteractive
 
@@ -73,13 +73,14 @@ RUN echo "[mysqld]" > /etc/mysql/conf.d/erpnext.cnf && \
     echo "innodb_file_per_table=1" >> /etc/mysql/conf.d/erpnext.cnf && \
     echo "innodb_buffer_pool_size=256M" >> /etc/mysql/conf.d/erpnext.cnf
 
-# 运行安装脚本，使用环境变量作为参数
+# 运行安装脚本，为敏感参数提供默认值以允许构建完成
+# 注意：在运行容器时应通过-e参数传入实际的敏感参数值
 RUN /bin/bash -c "echo 'Starting ERPNext installation...' && \
     /installdata/install-erpnext15.sh -qd \
-    mariadbRootPassword=$MARIADB_ROOT_PASSWORD \
-    adminPassword=$ADMIN_PASSWORD \
+    mariadbRootPassword=${MARIADB_ROOT_PASSWORD:-DefaultBuildTimePassword} \
+    adminPassword=${ADMIN_PASSWORD:-DefaultBuildTimeAdmin} \
     siteName=$SITE_NAME \
-    siteDbPassword=$SITE_DB_PASSWORD \
+    siteDbPassword=${SITE_DB_PASSWORD:-DefaultBuildTimeSiteDb} \
     productionMode=$PRODUCTION_MODE \
     altAptSources=$ALT_APT_SOURCES"
 

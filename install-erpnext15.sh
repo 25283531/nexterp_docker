@@ -834,7 +834,13 @@ if [[ ${inDocker} == "yes" ]]; then
     echo "stopasgroup=true" >> ${f}
     # 关闭mariadb进程，启动supervisor进程并管理mariadb进程
     echo "关闭mariadb进程，启动supervisor进程并管理mariadb进程"
-    /etc/init.d/mariadb stop
+    # 检查MariaDB进程是否存在，如果存在才尝试停止，避免因进程未启动导致的失败
+    if pgrep -f mariadb > /dev/null 2>&1 || pgrep -f mysqld > /dev/null 2>&1; then
+        echo "发现MariaDB进程，尝试停止..."
+        /etc/init.d/mariadb stop || true
+    else
+        echo "未发现MariaDB进程，跳过停止步骤"
+    fi
     # 等待2秒
     for i in $(seq -w 2); do
         echo ${i}
