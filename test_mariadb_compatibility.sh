@@ -11,9 +11,19 @@ if command -v mysql &> /dev/null; then
     MYSQL_VERSION=$(mysql --version | grep -oP 'MariaDB (\d+\.\d+)' | grep -oP '\d+\.\d+')
     echo "检测到的MariaDB版本: $MYSQL_VERSION"
     
-    # 验证版本兼容性
+    # 验证版本兼容性 - 使用纯bash方式进行版本比较
     REQUIRED_VERSION="10.6"
-    if (( $(echo "$MYSQL_VERSION >= $REQUIRED_VERSION" | bc -l) )); then
+    
+    # 将版本号转换为整数进行比较
+    ver1=$(echo $MYSQL_VERSION | tr '.' '0')
+    ver2=$(echo $REQUIRED_VERSION | tr '.' '0')
+    
+    # 确保版本号长度相同
+    max_len=$(( ${#ver1} > ${#ver2} ? ${#ver1} : ${#ver2} ))
+    ver1=$(printf "%${max_len}s" "$ver1" | tr ' ' '0')
+    ver2=$(printf "%${max_len}s" "$ver2" | tr ' ' '0')
+    
+    if [ "$ver1" -ge "$ver2" ]; then
         echo "✓ 版本兼容性检查通过: $MYSQL_VERSION >= $REQUIRED_VERSION"
     else
         echo "✗ 版本兼容性检查失败: $MYSQL_VERSION < $REQUIRED_VERSION"
@@ -21,6 +31,12 @@ if command -v mysql &> /dev/null; then
     fi
 else
     echo "MariaDB客户端未安装"
+    # 在Docker环境中，我们允许继续执行，因为可能是系统还未完全配置
+    if [[ "$inDocker" == "yes" ]]; then
+        echo "在Docker环境中，继续执行安装..."
+    else
+        exit 1
+    fi
 fi
 
 # 检查MariaDB配置

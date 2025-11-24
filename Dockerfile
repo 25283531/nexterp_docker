@@ -25,6 +25,9 @@ RUN apt-get update && apt-get install -y \
     nodejs \
     npm \
     yarn \
+    bc \
+    procps \
+    net-tools \
     && npm install -g yarn
 
 RUN useradd -m -s /bin/bash frappe && \
@@ -35,7 +38,9 @@ COPY test_mariadb_compatibility.sh /root/test_mariadb_compatibility.sh
 
 RUN chmod +x /root/install-erpnext15.sh /root/test_mariadb_compatibility.sh
 
-RUN echo "Starting ERPNext installation..." && \
+# 启动MariaDB服务并设置开机自启
+RUN service mariadb start && \
+    echo "Starting ERPNext installation..." && \
     echo "Current directory contents:" && ls -la && \
     echo "Executing script..." && \
     /root/install-erpnext15.sh -q -d \

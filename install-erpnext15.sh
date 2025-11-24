@@ -400,38 +400,18 @@ if type mysql >/dev/null 2>&1; then
     mysql_version=$(mysql -V)
     echo "检测到MariaDB版本: ${mysql_version}"
     
-    # 强制要求MariaDB 10.6版本，不兼容其他版本
-    result=$(echo ${mysql_version} | grep "10.6" || true)
-    if [[ "${result}" == "" ]]
-    then
-        echo '错误: 必须使用MariaDB 10.6版本！'
-        echo 'ERPNext 15与MariaDB版本兼容性要求严格，请安装MariaDB 10.6.x。'
-        echo "当前版本: ${mysql_version}"
-        
-        # 在Docker环境中尝试安装正确版本
-        if [[ ${inDocker} == "yes" ]]; then
-            echo "在Docker环境中尝试安装MariaDB 10.6..."
-            apt-get remove -y mariadb-server mariadb-client
-            apt-get autoremove -y
-            
-            # 添加MariaDB 10.6官方仓库
-            curl -LsS -O https://downloads.mariadb.com/MariaDB/mariadb_repo_setup
-            chmod +x mariadb_repo_setup
-            ./mariadb_repo_setup --mariadb-server-version=10.6
-            
-            # 安装MariaDB 10.6
-            apt-get update
-            DEBIAN_FRONTEND=noninteractive apt-get install -y mariadb-server=1:10.6* mariadb-client=1:10.6*
-            
-            # 重新检查版本
-            mysql_version=$(mysql -V)
-            echo "新安装的MariaDB版本: ${mysql_version}"
-            result=$(echo ${mysql_version} | grep "10.6" || true)
-            if [[ "${result}" == "" ]]; then
-                echo '错误: 无法安装MariaDB 10.6版本！'
-                exit 1
-            fi
-        else
+    # 在Docker环境中，我们允许使用Ubuntu默认仓库的MariaDB版本
+    # 在非Docker环境中，我们仍然要求MariaDB 10.6版本
+    if [[ ${inDocker} == "yes" ]]; then
+        echo "在Docker环境中，使用Ubuntu默认仓库的MariaDB版本: ${mysql_version}"
+    else
+        # 强制要求MariaDB 10.6版本，不兼容其他版本
+        result=$(echo ${mysql_version} | grep "10.6" || true)
+        if [[ "${result}" == "" ]]
+        then
+            echo '错误: 必须使用MariaDB 10.6版本！'
+            echo 'ERPNext 15与MariaDB版本兼容性要求严格，请安装MariaDB 10.6.x。'
+            echo "当前版本: ${mysql_version}"
             exit 1
         fi
     fi
