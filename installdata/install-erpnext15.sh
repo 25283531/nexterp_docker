@@ -20,9 +20,11 @@ else
     exit 1
 fi
 # 检测是否使用root用户执行
-if [ "$(id -u)" != "0" ]; then
-   echo "脚本需要使用root用户执行"
+if [ "${inDocker}" != "yes" ] && [ "$(id -u)" != "0" ]; then
+   echo "非Docker环境下，脚本需要使用root用户执行"
    exit 1
+elif [ "${inDocker}" == "yes" ]; then
+    echo 'Docker环境下，忽略root用户检查...'
 else
     echo '执行用户检测通过...'
 fi

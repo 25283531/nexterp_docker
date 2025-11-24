@@ -79,19 +79,41 @@ RUN chmod -R 777 /installdata/*
 # 设置工作目录
 WORKDIR /home/frappe/frappe-bench
 
+# 定义环境变量，确保构建时正确传递
+ENV SITE_NAME=${SITE_NAME:-site1.local}
+ENV PRODUCTION_MODE=${PRODUCTION_MODE:-yes}
+ENV ALT_APT_SOURCES=${ALT_APT_SOURCES:-yes}
+ENV IN_DOCKER=yes
+
 # 运行安装脚本，为敏感参数提供默认值以允许构建完成
 # 注意：在运行容器时应通过-e参数传入实际的敏感参数值
 # 以root用户运行，因为install-erpnext15.sh脚本要求root权限
-RUN echo 'Starting ERPNext installation...' && \
+# 移除脚本中的set -e以获得完整的错误日志
+RUN echo 'Starting ERPNext installation with debugging...' && \
+    sed -i 's/set -e/# set -e (disabled for debugging)/g' /installdata/install-erpnext15.sh && \
+    echo '=== Environment Information ===' && \
+    echo 'UID: '$(id -u) && \
+    echo 'Current User: '$(whoami) && \
+    echo 'Directory: '$(pwd) && \
+    echo '=== Defined Environment Variables ===' && \
+    echo 'SITE_NAME='${SITE_NAME} && \
+    echo 'PRODUCTION_MODE='${PRODUCTION_MODE} && \
+    echo 'ALT_APT_SOURCES='${ALT_APT_SOURCES} && \
+    echo 'IN_DOCKER='${IN_DOCKER} && \
+    echo 'MARIADB_ROOT_PASSWORD='${MARIADB_ROOT_PASSWORD:-DefaultBuildTimePassword} && \
+    echo 'ADMIN_PASSWORD='${ADMIN_PASSWORD:-DefaultBuildTimeAdmin} && \
+    echo 'SITE_DB_PASSWORD='${SITE_DB_PASSWORD:-DefaultBuildTimeSiteDb} && \
+    echo '=== Running Installation Script with Parameters ===' && \
     /installdata/install-erpnext15.sh -qd \
     mariadbRootPassword=${MARIADB_ROOT_PASSWORD:-DefaultBuildTimePassword} \
     adminPassword=${ADMIN_PASSWORD:-DefaultBuildTimeAdmin} \
-    siteName=$SITE_NAME \
+    siteName=${SITE_NAME} \
     siteDbPassword=${SITE_DB_PASSWORD:-DefaultBuildTimeSiteDb} \
-    productionMode=$PRODUCTION_MODE \
-    altAptSources=$ALT_APT_SOURCES \
+    productionMode=${PRODUCTION_MODE} \
+    altAptSources=${ALT_APT_SOURCES} \
     userName=frappe \
-    installDir=/home/frappe/frappe-bench
+    installDir=/home/frappe/frappe-bench \
+    inDocker=yes
 
 # 切换到frappe用户以提高安全性
 USER frappe
