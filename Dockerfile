@@ -1,5 +1,22 @@
+# erpnext
 FROM ubuntu:22.04
-LABEL author=lvxj11
+LABEL author=xiaohui0302
+
+# 设定参数
+ENV MARIADB_ROOT_PASSWORD=Pass1234
+ENV ADMIN_PASSWORD=admin
+
+# 拷贝基础软件安装脚本
+COPY ./installdata /installdata
+
+# 运行基础软件安装脚本。
+RUN /bin/bash -c "chmod -R 777 /installdata/* && /installdata/install-erpnext15.sh -qd"
+
+# 切换用户
+USER frappe
+WORKDIR /home/frappe/frappe-bench
+
+EXPOSE 3306 80
 
 # 设定非敏感参数
 ENV SITE_NAME=site1.local
@@ -91,13 +108,7 @@ EXPOSE 3306 80 8000
 VOLUME /home/frappe/frappe-bench/sites
 VOLUME /var/lib/mysql
 
-# 优雅停止容器
 STOPSIGNAL SIGTERM
 
-# 切换用户和工作目录
-USER frappe
-WORKDIR /home/frappe/frappe-bench
-
-# 启动命令
 ENTRYPOINT ["/bin/bash", "-c"]
 CMD ["sudo /usr/bin/supervisord -n -c /etc/supervisor/supervisord.conf"]
