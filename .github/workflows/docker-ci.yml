@@ -1,63 +1,46 @@
-# 工作流名称（自定义，如"构建并推送 Docker 镜像"）
 name: Build & Push Docker Image (With Cache)
 
-# 触发条件：push 到 main 分支、pull request 到 main 分支
 on:
   push:
-    branches: [ "main" ]  # 可修改为你的核心分支（如 master）
+    branches: [ "main" ]
   pull_request:
     branches: [ "main" ]
 
-# 环境变量（统一管理，便于修改）
 env:
-  # Docker 镜像信息：格式为"Docker 用户名/镜像名:标签"
-  DOCKER_IMAGE: ${{ secrets.DOCKER_USERNAME }}/erpnext15:latest  # 使用erpnext15作为镜像名
-  # 构建器类型（使用 Docker Buildx，支持多平台构建和缓存）
+  DOCKER_IMAGE: ${{ secrets.DOCKER_USERNAME }}/erpnext15:latest
   BUILDER: buildx-builder
 
 jobs:
-  # 定义一个"构建"任务（job 名称自定义）
   build-and-push:
-    # 运行环境：使用 Ubuntu 最新版（GitHub 托管的虚拟机）
     runs-on: ubuntu-latest
     steps:
-      # 步骤 1：拉取 GitHub 仓库代码到虚拟机
       - name: Checkout code
-        uses: actions/checkout@v4  # GitHub 官方动作，拉取代码
+        uses: actions/checkout@v4
+        
+      - name: List directory contents
+        run: ls -la
 
-      # 步骤 2：登录 Docker Hub（使用之前配置的 Secrets）
       - name: Login to Docker Hub
-        uses: docker/login-action@v3  # Docker 官方登录动作
+        uses: docker/login-action@v3
         with:
-          username: ${{ secrets.DOCKER_USERNAME }}  # 从 Secrets 读取用户名
-          password: ${{ secrets.DOCKER_TOKEN }}     # 从 Secrets 读取 Token
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_TOKEN }}
 
-      # 步骤 3：初始化 Docker Buildx（支持缓存和多平台构建）
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3  # Docker 官方构建环境初始化动作
+        uses: docker/setup-buildx-action@v3
         with:
-          builder: ${{ env.BUILDER }}  # 定义构建器名称，便于缓存复用
+          builder: ${{ env.BUILDER }}
 
-      # 步骤 4：带共享缓存构建并推送镜像（核心步骤）
       - name: Build & Push Docker Image
-        uses: docker/build-push-action@v6  # Docker 官方构建推送动作
+        uses: docker/build-push-action@v6
         with:
-          # 构建配置
-          context: .  # 构建上下文（仓库根目录）
-          file: ./Dockerfile  # 指定 Dockerfile 路径
-          push: ${{ github.event_name != 'pull_request' }}  # PR 时仅构建不推送，避免污染镜像
-          
-          # 共享缓存配置（关键！加速后续构建）
-          cache-from: type=gha  # 从 GitHub Actions 缓存中读取（复用历史构建层）
-          cache-to: type=gha,mode=max  # 写入缓存到 GitHub Actions，mode=max 表示缓存所有层
-          
-          # 镜像标签（可自定义，这里用 latest 标签）
+          context: .
+          file: Dockerfile
+          push: ${{ github.event_name != 'pull_request' }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
           tags: ${{ env.DOCKER_IMAGE }}
-          
-          # 调试选项
-          no-cache: false  # 启用缓存
-          pull: true  # 确保拉取最新的基础镜像
-          
-          # 增加构建过程中的日志输出
-          build-args: |
+          no-cache: false
+          pull: true
+          build-args:
             DEBIAN_FRONTEND=noninteractive
