@@ -38,9 +38,8 @@ COPY test_mariadb_compatibility.sh /root/test_mariadb_compatibility.sh
 
 RUN chmod +x /root/install-erpnext15.sh /root/test_mariadb_compatibility.sh
 
-# 启动MariaDB服务并设置开机自启
-RUN service mariadb start && \
-    echo "Starting ERPNext installation..." && \
+# 直接执行ERPNext安装脚本，脚本内部会处理MariaDB的启动和配置
+RUN echo "Starting ERPNext installation..." && \
     echo "Current directory contents:" && ls -la && \
     echo "Executing script..." && \
     /root/install-erpnext15.sh -q -d \
