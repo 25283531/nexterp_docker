@@ -6,12 +6,7 @@ RUN apt-get update && apt-get install -y tzdata && \
     ln -fs /usr/share/zoneinfo/Asia/Shanghai /etc/localtime && \
     dpkg-reconfigure --frontend noninteractive tzdata
 
-# 添加MariaDB 10.6官方仓库
-RUN curl -LsS -O https://downloads.mariadb.com/MariaDB/mariadb_repo_setup && \
-    chmod +x mariadb_repo_setup && \
-    ./mariadb_repo_setup --mariadb-server-version=10.6 && \
-    rm mariadb_repo_setup
-
+# 使用Ubuntu默认仓库安装MariaDB，添加超时重试和连接优化
 RUN apt-get update && apt-get install -y \
     git \
     curl \
@@ -23,8 +18,8 @@ RUN apt-get update && apt-get install -y \
     python3-pip \
     python3-dev \
     build-essential \
-    mariadb-server=1:10.6* \
-    mariadb-client=1:10.6* \
+    mariadb-server \
+    mariadb-client \
     libmariadb-dev \
     redis-server \
     nodejs \

@@ -9,7 +9,6 @@ on:
 env:
   DOCKER_IMAGE: ${{ secrets.DOCKER_USERNAME }}/erpnext15:latest
   BUILDER: buildx-builder
-  MARIADB_VERSION: "10.6"
   DEFAULT_TIMEOUT_MINUTES: 180
 
 jobs:
@@ -26,7 +25,7 @@ jobs:
           uname -a
           docker --version
           docker info
-          echo "MariaDB version required: ${{ env.MARIADB_VERSION }}"
+          echo "Using Ubuntu default MariaDB version"
           echo "Build context verification:"
           ls -la
           cat Dockerfile | head -n 30
@@ -59,4 +58,4 @@ jobs:
           progress: plain
           build-args: |
             DEBIAN_FRONTEND=noninteractive
-            MARIADB_VERSION=${{ env.MARIADB_VERSION }}
+            # MARIADB_VERSION is no longer needed as we use Ubuntu default repository
