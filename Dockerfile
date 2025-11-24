@@ -76,20 +76,25 @@ COPY ./installdata /installdata
 # 设置脚本权限
 RUN chmod -R 777 /installdata/*
 
-# 切换到frappe用户
-USER frappe
+# 设置工作目录
 WORKDIR /home/frappe/frappe-bench
 
 # 运行安装脚本，为敏感参数提供默认值以允许构建完成
 # 注意：在运行容器时应通过-e参数传入实际的敏感参数值
-RUN /bin/bash -c "echo 'Starting ERPNext installation...' && \
+# 以root用户运行，因为install-erpnext15.sh脚本要求root权限
+RUN echo 'Starting ERPNext installation...' && \
     /installdata/install-erpnext15.sh -qd \
     mariadbRootPassword=${MARIADB_ROOT_PASSWORD:-DefaultBuildTimePassword} \
     adminPassword=${ADMIN_PASSWORD:-DefaultBuildTimeAdmin} \
     siteName=$SITE_NAME \
     siteDbPassword=${SITE_DB_PASSWORD:-DefaultBuildTimeSiteDb} \
     productionMode=$PRODUCTION_MODE \
-    altAptSources=$ALT_APT_SOURCES"
+    altAptSources=$ALT_APT_SOURCES \
+    userName=frappe \
+    installDir=/home/frappe/frappe-bench
+
+# 切换到frappe用户以提高安全性
+USER frappe
 
 # 暴露端口
 EXPOSE 3306 80 8000

@@ -40,7 +40,7 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
         with:
-          builder: ${{ env.BUILDER }}
+          name: ${{ env.BUILDER }}
           driver-opts: image=moby/buildkit:latest
 
       - name: Build & Push Docker Image
@@ -53,9 +53,7 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
           tags: ${{ github.event_name == 'pull_request' && format('{0}, {0}:pr-{1}', env.DOCKER_IMAGE, github.event.number) || env.DOCKER_IMAGE }}
-          timeout: 180m
           network: host
-          progress: plain
           build-args: |
             DEBIAN_FRONTEND=noninteractive
             # MARIADB_VERSION is no longer needed as we use Ubuntu default repository
