@@ -90,10 +90,10 @@ WORKDIR /home/frappe
 
 # 运行安装脚本，为敏感参数提供默认值以允许构建完成
 # 注意：在运行容器时应通过-e参数传入实际的敏感参数值
-# 以root用户运行，因为install-erpnext15.sh脚本要求root权限
+# 以root用户运行，因为oldinstall-erpnext15.sh脚本要求root权限
 # 移除脚本中的set -e以获得完整的错误日志
-RUN echo 'Starting ERPNext installation with debugging...' && \
-    sed -i 's/set -e/# set -e (disabled for debugging)/g' /installdata/install-erpnext15.sh && \
+RUN echo 'Starting ERPNext installation with oldinstall-erpnext15.sh...' && \
+    sed -i 's/set -e/# set -e (disabled for debugging)/g' /installdata/oldinstall-erpnext15.sh && \
     # 确保frappe用户目录存在并具有正确权限
     mkdir -p /home/frappe && chown -R frappe:frappe /home/frappe && \
     # 创建supervisor配置所需的目录结构
@@ -112,7 +112,7 @@ RUN echo 'Starting ERPNext installation with debugging...' && \
     echo 'SITE_DB_PASSWORD='${SITE_DB_PASSWORD:-DefaultBuildTimeSiteDb} && \
     echo '=== Running Installation Script with Parameters ===' && \
     # 修改installDir参数为相对路径，避免路径重复拼接问题
-    /installdata/install-erpnext15.sh -qd \
+    /installdata/oldinstall-erpnext15.sh -qd \
     mariadbRootPassword=${MARIADB_ROOT_PASSWORD:-DefaultBuildTimePassword} \
     adminPassword=${ADMIN_PASSWORD:-DefaultBuildTimeAdmin} \
     siteName=${SITE_NAME} \
