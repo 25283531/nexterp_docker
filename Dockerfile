@@ -16,7 +16,17 @@ RUN apt-get update && apt-get install -y \
     wget \
     bash \
     sudo \
-    supervisor
+    supervisor \
+    python3 \
+    python3-pip \
+    python3-dev \
+    build-essential \
+    libmariadb-dev \
+    redis-server \
+    nodejs \
+    npm \
+    yarn \
+    && npm install -g yarn
 
 # 创建frappe用户
 RUN useradd -m -s /bin/bash frappe && \
@@ -29,12 +39,17 @@ COPY install-erpnext15.sh /root/install-erpnext15.sh
 RUN chmod +x /root/install-erpnext15.sh
 
 # 运行安装脚本，使用Docker模式和静默模式
-RUN /root/install-erpnext15.sh -q -d \
+# 增加调试输出
+RUN echo "开始安装ERPNext..." && \
+    echo "当前目录内容:" && ls -la && \
+    echo "执行脚本..." && \
+    /root/install-erpnext15.sh -q -d \
     mariadbRootPassword=Pass1234 \
     adminPassword=admin \
     siteName=site1.local \
     siteDbPassword=Pass1234 \
-    productionMode=yes
+    productionMode=yes \
+    altAptSources=no
 
 # 创建日志目录
 RUN mkdir -p /var/run/log && chmod 777 /var/run/log

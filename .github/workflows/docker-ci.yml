@@ -53,3 +53,11 @@ jobs:
           
           # 镜像标签（可自定义，这里用 latest 标签）
           tags: ${{ env.DOCKER_IMAGE }}
+          
+          # 调试选项
+          no-cache: false  # 启用缓存
+          pull: true  # 确保拉取最新的基础镜像
+          
+          # 增加构建过程中的日志输出
+          build-args: |
+            DEBIAN_FRONTEND=noninteractive

@@ -107,7 +107,7 @@ do
                 ;;
             "p")
                 argTag='webPort'
-                echo "针对docker镜像安装方式适配。"
+                echo "设置web端口参数模式。"
                 ;;
             esac
         done
@@ -1122,8 +1122,5 @@ if [[ ${inDocker} == "yes" ]]; then
     /usr/bin/supervisorctl status
     # echo "停止所有进程。"
     # /usr/bin/supervisorctl stop all
-fi
-exit 0
-p all
 fi
 exit 0
