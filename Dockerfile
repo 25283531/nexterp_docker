@@ -85,12 +85,19 @@ ENV PRODUCTION_MODE=${PRODUCTION_MODE:-yes}
 ENV ALT_APT_SOURCES=${ALT_APT_SOURCES:-yes}
 ENV IN_DOCKER=yes
 
+# 设置工作目录
+WORKDIR /home/frappe
+
 # 运行安装脚本，为敏感参数提供默认值以允许构建完成
 # 注意：在运行容器时应通过-e参数传入实际的敏感参数值
 # 以root用户运行，因为install-erpnext15.sh脚本要求root权限
 # 移除脚本中的set -e以获得完整的错误日志
 RUN echo 'Starting ERPNext installation with debugging...' && \
     sed -i 's/set -e/# set -e (disabled for debugging)/g' /installdata/install-erpnext15.sh && \
+    # 确保frappe用户目录存在并具有正确权限
+    mkdir -p /home/frappe && chown -R frappe:frappe /home/frappe && \
+    # 创建supervisor配置所需的目录结构
+    mkdir -p /etc/supervisor/conf.d && mkdir -p /home/frappe/frappe-bench/config && \
     echo '=== Environment Information ===' && \
     echo 'UID: '$(id -u) && \
     echo 'Current User: '$(whoami) && \
@@ -104,6 +111,7 @@ RUN echo 'Starting ERPNext installation with debugging...' && \
     echo 'ADMIN_PASSWORD='${ADMIN_PASSWORD:-DefaultBuildTimeAdmin} && \
     echo 'SITE_DB_PASSWORD='${SITE_DB_PASSWORD:-DefaultBuildTimeSiteDb} && \
     echo '=== Running Installation Script with Parameters ===' && \
+    # 修改installDir参数为相对路径，避免路径重复拼接问题
     /installdata/install-erpnext15.sh -qd \
     mariadbRootPassword=${MARIADB_ROOT_PASSWORD:-DefaultBuildTimePassword} \
     adminPassword=${ADMIN_PASSWORD:-DefaultBuildTimeAdmin} \
@@ -112,11 +120,18 @@ RUN echo 'Starting ERPNext installation with debugging...' && \
     productionMode=${PRODUCTION_MODE} \
     altAptSources=${ALT_APT_SOURCES} \
     userName=frappe \
-    installDir=/home/frappe/frappe-bench \
+    installDir=frappe-bench \
     inDocker=yes
 
 # 切换到frappe用户以提高安全性
+# 设置环境变量
+ENV LANG=C.UTF-8 LC_ALL=C.UTF-8
+
+# 切换回frappe用户
 USER frappe
+
+# 设置工作目录为bench目录
+WORKDIR /home/frappe/frappe-bench
 
 # 暴露端口
 EXPOSE 3306 80 8000

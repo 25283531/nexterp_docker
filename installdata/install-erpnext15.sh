@@ -36,6 +36,13 @@ fi
 # 静默模式会默认删除已存在的安装目录和当前设置站点重名的数据库及用户。请谨慎使用。
 # branch参数会同时修改frappe和erpnext的分支。
 # 也可以直接修改下列变量
+
+# 路径处理函数：确保正确拼接路径，避免重复
+normalize_path() {
+  # 移除多余的斜杠
+  echo "$1" | sed 's://*:/:g' | sed 's:/*$::'
+}
+
 mariadbPath=""
 mariadbPort="3306"
 mariadbRootPassword="Pass1234"
@@ -61,6 +68,26 @@ quiet="no"
 inDocker="no"
 # 是否删除重复文件
 removeDuplicate="yes"
+
+# 路径处理函数：确保正确拼接路径，避免重复
+normalize_path() {
+  # 移除多余的斜杠
+  echo "$1" | sed 's://*:/:g' | sed 's:/*$::'
+}
+
+# 构建完整的安装路径
+userHome="/home/$userName"
+fullInstallDir="$userHome/$installDir"
+# 标准化路径，避免重复斜杠
+fullInstallDir=$(normalize_path "$fullInstallDir")
+
+# 调试输出路径信息
+echo "路径信息："
+echo "- 用户名: $userName"
+echo "- 用户目录: $userHome"
+echo "- 安装目录(参数): $installDir"
+echo "- 完整安装路径: $fullInstallDir"
+
 # 检测如果是云主机或已经是国内源则不修改apt安装源
 hostAddress=("mirrors.tencentyun.com" "mirrors.tuna.tsinghua.edu.cn" "cn.archive.ubuntu.com")
 for h in ${hostAddress[@]}; do
@@ -159,10 +186,20 @@ do
         "installDir")
             installDir=${arg1}
             echo "设置安装目录为： ${installDir}"
+            # 重新计算标准化的完整安装路径
+            userHome="/home/$userName"
+            fullInstallDir="$userHome/$installDir"
+            fullInstallDir=$(normalize_path "$fullInstallDir")
+            echo "更新后的完整安装路径: $fullInstallDir"
             ;;
         "userName")
             userName=${arg1}
             echo "设置安装用户为： ${userName}"
+            # 重新计算标准化的完整安装路径
+            userHome="/home/$userName"
+            fullInstallDir="$userHome/$installDir"
+            fullInstallDir=$(normalize_path "$fullInstallDir")
+            echo "更新后的完整安装路径: $fullInstallDir"
             ;;
         "siteDbPassword")
             siteDbPassword=${arg1}
