@@ -16,7 +16,7 @@ env:
 jobs:
   build-and-push:
     runs-on: ubuntu-latest
-    timeout-minutes: ${{ env.DEFAULT_TIMEOUT_MINUTES }}
+    timeout-minutes: 180
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -60,9 +60,7 @@ jobs:
             type=registry,ref=${{ env.DOCKER_IMAGE }}:buildcache,mode=max
             type=gha,mode=max
           # 添加构建标记
-          tags: |
-            ${{ env.DOCKER_IMAGE }}
-            ${{ github.event_name == 'pull_request' && format('{0}:pr-{1}', env.DOCKER_IMAGE, github.event.number) || '' }}
+          tags: ${{ github.event_name == 'pull_request' && format('{0}, {0}:pr-{1}', env.DOCKER_IMAGE, github.event.number) || env.DOCKER_IMAGE }}
           # 增加构建超时
           timeout: 180m
           # 优化网络性能
@@ -71,5 +69,5 @@ jobs:
           progress: plain
           # 构建参数
           build-args:
-            DEBIAN_FRONTEND=noninteractive
-            MARIADB_VERSION=${{ env.MARIADB_VERSION }}
+            - DEBIAN_FRONTEND=noninteractive
+            - MARIADB_VERSION=${{ env.MARIADB_VERSION }}
