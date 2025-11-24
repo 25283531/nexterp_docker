@@ -50,12 +50,9 @@ jobs:
           context: .
           file: Dockerfile
           push: ${{ github.event_name != 'pull_request' }}
-          cache-from: |
-            type=registry,ref=${{ env.DOCKER_IMAGE }}:buildcache
-            type=gha
-          cache-to: |
-            type=registry,ref=${{ env.DOCKER_IMAGE }}:buildcache,mode=max
-            type=gha,mode=max
+          # 简化缓存策略，仅使用GitHub Actions缓存
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
           tags: ${{ github.event_name == 'pull_request' && format('{0}, {0}:pr-{1}', env.DOCKER_IMAGE, github.event.number) || env.DOCKER_IMAGE }}
           timeout: 180m
           network: host
