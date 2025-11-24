@@ -9,8 +9,8 @@ ENV ADMIN_PASSWORD=admin
 # 拷贝基础软件安装脚本
 COPY ./installdata /installdata
 
-# 运行基础软件安装脚本。
-RUN /bin/bash -c "chmod -R 777 /installdata/* && /installdata/install-erpnext15.sh -qd"
+# 设置脚本权限
+RUN chmod -R 777 /installdata/*
 
 # 切换用户
 USER frappe
@@ -65,12 +65,7 @@ RUN useradd -m -s /bin/bash frappe && \
 # 创建installdata目录并设置权限
 RUN mkdir -p /installdata && chmod -R 777 /installdata
 
-# 拷贝安装脚本到installdata目录
-COPY install-erpnext15.sh /installdata/install-erpnext15.sh
-COPY test_mariadb_compatibility.sh /installdata/test_mariadb_compatibility.sh
-
-# 设置脚本权限
-RUN chmod -R 777 /installdata/*
+# 脚本已通过installdata目录拷贝，这里不再重复
 
 # 配置MariaDB数据目录和权限
 RUN mkdir -p /var/lib/mysql /var/run/mysqld && \

@@ -472,14 +472,14 @@ else
 fi
 
 # 执行兼容性测试脚本
-echo "执行MariaDB兼容性测试..."
-if [ -f "/root/test_mariadb_compatibility.sh" ]; then
-    chmod +x /root/test_mariadb_compatibility.sh
-    export MARIADB_VERSION="10.6"
-    /root/test_mariadb_compatibility.sh
-else
-    echo "警告: 测试脚本不存在"
-fi
+    echo "执行MariaDB兼容性测试..."
+    if [ -f "/installdata/test_mariadb_compatibility.sh" ]; then
+        chmod +x /installdata/test_mariadb_compatibility.sh
+        export MARIADB_VERSION="10.6"
+        /installdata/test_mariadb_compatibility.sh
+    else
+        echo "警告: 测试脚本不存在"
+    fi
 
 echo "===================数据库配置完成==================="
 # 检查数据库是否有同名用户。如有，选择处理方式。
