@@ -2,22 +2,6 @@
 FROM ubuntu:22.04
 LABEL author=xiaohui0302
 
-# 设定参数
-ENV MARIADB_ROOT_PASSWORD=Pass1234
-ENV ADMIN_PASSWORD=admin
-
-# 拷贝基础软件安装脚本
-COPY ./installdata /installdata
-
-# 设置脚本权限
-RUN chmod -R 777 /installdata/*
-
-# 切换用户
-USER frappe
-WORKDIR /home/frappe/frappe-bench
-
-EXPOSE 3306 80
-
 # 设定非敏感参数
 ENV SITE_NAME=site1.local
 ENV PRODUCTION_MODE=yes
@@ -65,7 +49,8 @@ RUN useradd -m -s /bin/bash frappe && \
 # 创建installdata目录并设置权限
 RUN mkdir -p /installdata && chmod -R 777 /installdata
 
-# 脚本已通过installdata目录拷贝，这里不再重复
+# 创建frappe-bench目录
+RUN mkdir -p /home/frappe/frappe-bench && chown -R frappe:frappe /home/frappe/frappe-bench
 
 # 配置MariaDB数据目录和权限
 RUN mkdir -p /var/lib/mysql /var/run/mysqld && \
@@ -84,6 +69,16 @@ RUN echo "[mysqld]" > /etc/mysql/conf.d/erpnext.cnf && \
     echo "max_connections=100" >> /etc/mysql/conf.d/erpnext.cnf && \
     echo "innodb_file_per_table=1" >> /etc/mysql/conf.d/erpnext.cnf && \
     echo "innodb_buffer_pool_size=256M" >> /etc/mysql/conf.d/erpnext.cnf
+
+# 拷贝基础软件安装脚本
+COPY ./installdata /installdata
+
+# 设置脚本权限
+RUN chmod -R 777 /installdata/*
+
+# 切换到frappe用户
+USER frappe
+WORKDIR /home/frappe/frappe-bench
 
 # 运行安装脚本，为敏感参数提供默认值以允许构建完成
 # 注意：在运行容器时应通过-e参数传入实际的敏感参数值
