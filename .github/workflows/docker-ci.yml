@@ -10,7 +10,6 @@ env:
   DOCKER_IMAGE: ${{ secrets.DOCKER_USERNAME }}/erpnext15:latest
   BUILDER: buildx-builder
   MARIADB_VERSION: "10.6"
-  # 设置超时时间为3小时
   DEFAULT_TIMEOUT_MINUTES: 180
 
 jobs:
@@ -20,7 +19,7 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-        
+
       - name: System info and prerequisites
         run: |
           echo "System information:"
@@ -44,7 +43,7 @@ jobs:
         with:
           builder: ${{ env.BUILDER }}
           driver-opts:
-            - "image=moby/buildkit:latest"
+            - image=moby/buildkit:latest
 
       - name: Build & Push Docker Image
         uses: docker/build-push-action@v6
@@ -52,22 +51,16 @@ jobs:
           context: .
           file: Dockerfile
           push: ${{ github.event_name != 'pull_request' }}
-          # 优化缓存策略
-          cache-from: |
-            type=registry,ref=${{ env.DOCKER_IMAGE }}:buildcache
-            type=gha
-          cache-to: |
-            type=registry,ref=${{ env.DOCKER_IMAGE }}:buildcache,mode=max
-            type=gha,mode=max
-          # 添加构建标记
+          cache-from:
+            - type=registry,ref=${{ env.DOCKER_IMAGE }}:buildcache
+            - type=gha
+          cache-to:
+            - type=registry,ref=${{ env.DOCKER_IMAGE }}:buildcache,mode=max
+            - type=gha,mode=max
           tags: ${{ github.event_name == 'pull_request' && format('{0}, {0}:pr-{1}', env.DOCKER_IMAGE, github.event.number) || env.DOCKER_IMAGE }}
-          # 增加构建超时
           timeout: 180m
-          # 优化网络性能
           network: host
-          # 详细日志
           progress: plain
-          # 构建参数
           build-args:
             - DEBIAN_FRONTEND=noninteractive
             - MARIADB_VERSION=${{ env.MARIADB_VERSION }}
