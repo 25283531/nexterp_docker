@@ -750,9 +750,9 @@ fi
 # npm get registry
 npm config set registry https://registry.npmmirror.com -g
 echo "===================npm已修改为国内源==================="
-# 升级npm
+# 升级npm到与Node.js 20兼容的版本
 echo "===================升级npm==================="
-npm install -g npm
+npm install -g npm@10
 # 安装yarn
 echo "===================安装yarn==================="
 npm install -g yarn

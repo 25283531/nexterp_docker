@@ -32,13 +32,14 @@ RUN apt-get update && apt-get install -y \
     mariadb-client \
     libmariadb-dev \
     redis-server \
-    nodejs \
-    npm \
-    yarn \
     bc \
     procps \
-    net-tools \
-    && npm install -g yarn
+    net-tools
+
+# 安装Node.js 20的最新稳定版本
+RUN curl -fsSL https://deb.nodesource.com/setup_20.x | bash - && \
+    apt-get install -y nodejs && \
+    npm install -g yarn
 
 # 创建frappe用户并设置sudo权限
 RUN useradd -m -s /bin/bash frappe && \
