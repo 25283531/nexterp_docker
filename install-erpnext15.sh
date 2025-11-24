@@ -397,15 +397,46 @@ fi
 # 环境需求检查,MariaDB
 # https://mirrors.aliyun.com/mariadb/mariadb-10.6.8/bintar-linux-systemd-x86_64/mariadb-10.6.8-linux-systemd-x86_64.tar.gz
 if type mysql >/dev/null 2>&1; then
-    result=$(mysql -V | grep "10.6" || true)
+    mysql_version=$(mysql -V)
+    echo "检测到MariaDB版本: ${mysql_version}"
+    
+    # 强制要求MariaDB 10.6版本，不兼容其他版本
+    result=$(echo ${mysql_version} | grep "10.6" || true)
     if [[ "${result}" == "" ]]
     then
-        echo '==========已安装MariaDB，但不是推荐的10.6版本。=========='
-        warnArr[${#warnArr[@]}]='MariaDB不是推荐的10.6版本。'
-    else
-        echo '==========已安装MariaDB10.6=========='
+        echo '错误: 必须使用MariaDB 10.6版本！'
+        echo 'ERPNext 15与MariaDB版本兼容性要求严格，请安装MariaDB 10.6.x。'
+        echo "当前版本: ${mysql_version}"
+        
+        # 在Docker环境中尝试安装正确版本
+        if [[ ${inDocker} == "yes" ]]; then
+            echo "在Docker环境中尝试安装MariaDB 10.6..."
+            apt-get remove -y mariadb-server mariadb-client
+            apt-get autoremove -y
+            
+            # 添加MariaDB 10.6官方仓库
+            curl -LsS -O https://downloads.mariadb.com/MariaDB/mariadb_repo_setup
+            chmod +x mariadb_repo_setup
+            ./mariadb_repo_setup --mariadb-server-version=10.6
+            
+            # 安装MariaDB 10.6
+            apt-get update
+            DEBIAN_FRONTEND=noninteractive apt-get install -y mariadb-server=1:10.6* mariadb-client=1:10.6*
+            
+            # 重新检查版本
+            mysql_version=$(mysql -V)
+            echo "新安装的MariaDB版本: ${mysql_version}"
+            result=$(echo ${mysql_version} | grep "10.6" || true)
+            if [[ "${result}" == "" ]]; then
+                echo '错误: 无法安装MariaDB 10.6版本！'
+                exit 1
+            fi
+        else
+            exit 1
+        fi
     fi
-    rteArr[${#rteArr[@]}]=$(mysql -V)
+    echo '==========已安装MariaDB10.6，版本兼容=========='
+    rteArr[${#rteArr[@]}]=${mysql_version}
 else
     echo "==========MariaDB安装失败退出脚本！=========="
     exit 1
@@ -432,22 +463,44 @@ for i in $(seq -w 2); do
     sleep 1
 done
 # 授权远程访问并修改密码
-if mysql -uroot -e quit >/dev/null 2>&1
-then
-    echo "===================修改数据库root本地访问密码==================="
-    mysqladmin -v -uroot password ${mariadbRootPassword}
-elif mysql -uroot -p${mariadbRootPassword} -e quit >/dev/null 2>&1
-then
-    echo "===================数据库root本地访问密码已配置==================="
+echo "===================配置MariaDB权限和密码==================="
+# 增强权限设置，确保正确配置
+
+# 首先尝试设置root密码
+mysql -uroot -e "ALTER USER 'root'@'localhost' IDENTIFIED BY '${mariadbRootPassword}';" 2>/dev/null || true
+
+# 验证密码设置
+if mysql -uroot -p${mariadbRootPassword} -e "SELECT 1;" >/dev/null 2>&1; then
+    echo "数据库root本地访问密码设置成功"
+    
+    # 清理旧的root用户记录
+    mysql -u root -p${mariadbRootPassword} -e "DELETE FROM mysql.user WHERE User='root' AND Host NOT IN ('localhost', '127.0.0.1', '::1');"
+    
+    # 配置远程访问权限
+    mysql -u root -p${mariadbRootPassword} -e "GRANT ALL PRIVILEGES ON *.* TO 'root'@'%' IDENTIFIED BY '${mariadbRootPassword}' WITH GRANT OPTION;"
+    
+    # 刷新权限表
+    mysql -u root -p${mariadbRootPassword} -e "FLUSH PRIVILEGES;"
+    
+    # 更新debian.cnf文件
+    if [ -f /etc/mysql/debian.cnf ]; then
+        sed -i 's/^password.*$/password='"${mariadbRootPassword}"'/' /etc/mysql/debian.cnf
+    fi
 else
-    echo "===================数据库root本地访问密码错误==================="
-    exit 1
+    echo "警告：无法设置root密码，尝试使用mysqladmin..."
+    mysqladmin -v -uroot password ${mariadbRootPassword} 2>/dev/null || true
 fi
-echo "===================修改数据库root远程访问密码==================="
-mysql -u root -p${mariadbRootPassword} -e "GRANT ALL PRIVILEGES ON *.* TO 'root'@'%' IDENTIFIED BY '${mariadbRootPassword}' WITH GRANT OPTION;"
-echo "===================刷新权限表==================="
-mysqladmin -v -uroot -p${mariadbRootPassword} reload
-sed -i 's/^password.*$/password='"${mariadbRootPassword}"'/' /etc/mysql/debian.cnf
+
+# 执行兼容性测试脚本
+echo "执行MariaDB兼容性测试..."
+if [ -f "/root/test_mariadb_compatibility.sh" ]; then
+    chmod +x /root/test_mariadb_compatibility.sh
+    export MARIADB_VERSION="10.6"
+    /root/test_mariadb_compatibility.sh
+else
+    echo "警告: 测试脚本不存在"
+fi
+
 echo "===================数据库配置完成==================="
 # 检查数据库是否有同名用户。如有，选择处理方式。
 echo "==========检查数据库残留=========="
@@ -906,7 +959,7 @@ EOF
 su - ${userName} <<EOF
 cd ~/${installDir}
 echo "===================建立新网站==================="
-bench new-site --mariadb-root-password ${mariadbRootPassword} ${siteDbPassword} --admin-password ${adminPassword} ${siteName}
+bench new-site ${siteName} --mariadb-root-password ${mariadbRootPassword} --db-password ${siteDbPassword} --admin-password ${adminPassword}
 EOF
 # 安装erpnext应用到新网站
 su - ${userName} <<EOF
